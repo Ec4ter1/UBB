@@ -1,0 +1,76 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit, printf             ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll
+     9                                  import printf msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+    10                                                  
+    11                                                  ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    12                                  
+    13                                  ; our data is declared here (the variables needed by our program)
+    14                                  segment data use32 class=data
+    15 00000000 256400                      format db "%d", 0
+    16 00000003 536972756C2065203A-         format_s db "Sirul e : %s", 0
+    16 0000000C 20257300           
+    17 00000010 FFFFFFFF40E20100            a dd -1, 123456
+    18                                      l equ $-a
+    19 00000018 00000000<rept>              b times l dd 00000000h
+    20                                  
+    21                                  ; our code starts here
+    22                                  segment code use32 class=code
+    23                                      start:
+    24 00000000 B908000000                      mov ecx, l
+    25 00000005 E346                            jecxz final
+    26 00000007 FC                              cld
+    27 00000008 BE[10000000]                    mov esi, a
+    28 0000000D BF[18000000]                    mov edi, b
+    29                                          
+    30                                          repo3:
+    31 00000012 51                                  push ecx
+    32                                              ;mov eax, [a+esi]
+    33 00000013 AD                                  lodsd
+    34                                              ;suma unui elem
+    35 00000014 B908000000                          mov ecx, 8
+    36 00000019 BA00000000                          mov edx, 0
+    37                                              repi2:
+    38 0000001E 51                                      push ecx
+    39 0000001F B904000000                              mov ecx, 4
+    40 00000024 BB00000000                              mov ebx, 0
+    41                                                  repeta:
+    42 00000029 D1C8                                        ror eax, 1
+    43 0000002B D0D3                                        rcl bl, 1
+    44 0000002D E2FA                                    loop repeta
+    45 0000002F 01DA                                    add edx, ebx
+    46 00000031 59                                      pop ecx
+    47 00000032 E2EA                                loop repi2
+    48                                              ; push edx
+    49                                              ; push dword format
+    50                                              ; call [printf]
+    51                                              ; add esp, 4*2
+    52 00000034 89D0                                mov eax, edx
+    53 00000036 AB                                  stosd
+    54                                              ; mov [b+edi], edx
+    55                                              ; inc edi
+    56                                              ; inc edi
+    57                                              ; inc edi
+    58                                              ; inc edi
+    59                                              
+    60                                              ; inc esi
+    61                                              ; inc esi
+    62                                              ; inc esi
+    63                                              ; inc esi
+    64                                              
+    65 00000037 59                                  pop ecx
+    66 00000038 E2D8                            loop repo3
+    67                                          
+    68 0000003A 68[18000000]                    push dword b
+    69 0000003F 68[03000000]                    push dword format_s
+    70 00000044 FF15[00000000]                  call [printf]
+    71 0000004A 83C408                          add esp, 4*2
+    72                                          final:
+    73                                          ; exit(0)
+    74 0000004D 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    75 0000004F FF15[00000000]                  call    [exit]       ; call exit to terminate the program

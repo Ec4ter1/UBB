@@ -1,0 +1,47 @@
+     1                                  ; Ne propunem ca programul de mai jos sa citeasca de la tastatura un numar si sa afiseze pe ecran valoarea numarului citit impreuna cu un mesaj.
+     2                                  bits 32
+     3                                  global start        
+     4                                  
+     5                                  ; declararea functiilor externe folosite de program
+     6                                  extern exit, printf, scanf  ; adaugam printf si scanf ca functii externe           
+     7                                  import exit msvcrt.dll     
+     8                                  import printf msvcrt.dll     ; indicam asamblorului ca functia printf se gaseste in libraria msvcrt.dll
+     9                                  import scanf msvcrt.dll      ; similar pentru scanf
+    10                                                            
+    11                                  segment  data use32 class=data
+    12 00000000 00000000                	n dd 0       ; in aceasta variabila se va stoca valoarea citita de la tastatura
+    13 00000004 4E72206E2076617A75-     	message1  db "Nr n vazut ca nr unsigned este %u ", 0
+    13 0000000D 74206361206E722075-
+    13 00000016 6E7369676E65642065-
+    13 0000001F 7374652025752000   
+    14 00000027 0A0D4E7220696E2068-         msg2 db 10, 13, "Nr in hexa e %X",0
+    14 00000030 657861206520255800 
+    15 00000039 256400                  	format  db "%d", 0  
+    16                                      
+    17                                  segment  code use32 class=code
+    18                                      start:
+    19                                                                                 
+    20                                          ; punem parametrii pe stiva de la dreapta la stanga
+    21 00000000 68[00000000]                    push  dword n       ; ! adresa lui n, nu valoarea
+    22 00000005 68[39000000]                    push  dword format
+    23 0000000A FF15[00000000]                  call  [scanf]       ; apelam functia scanf pentru citire
+    24 00000010 83C408                          add  esp, 4 * 2     ; eliberam parametrii de pe stiva; 4 = dimensiunea unui dword; 2 = nr de parametri
+    25                                          
+    26                                          ;convertim n la dword pentru a pune valoarea pe stiva 
+    27 00000013 A1[00000000]                    mov  eax, [n]
+    28                                          
+    29                                          ;afisam mesajul si valoarea lui n
+    30 00000018 50                              push  eax
+    31 00000019 68[04000000]                    push  dword message1
+    32 0000001E FF15[00000000]                  call  [printf]
+    33 00000024 83C408                          add  esp,4*2 
+    34                                          
+    35 00000027 A1[00000000]                    mov eax, [n]
+    36 0000002C 50                              push eax
+    37 0000002D 68[27000000]                    push dword msg2
+    38 00000032 FF15[00000000]                  call [printf]
+    39 00000038 83C408                          add esp, 4*2
+    40                                          
+    41                                          ; exit(0)
+    42 0000003B 6A00                            push  dword 0     ; punem pe stiva parametrul pentru exit
+    43 0000003D FF15[00000000]                  call  [exit]       ; apelam exit pentru a incheia programul

@@ -1,0 +1,48 @@
+     1                                  bits 32
+     2                                  
+     3                                  global start
+     4                                  
+     5                                  extern exit, printf, scanf
+     6                                  import exit msvcrt.dll
+     7                                  import printf msvcrt.dll
+     8                                  import scanf msvcrt.dll
+     9                                  
+    10                                  segment data use32 class=data
+    11 00000000 00000000                    a dd 0
+    12 00000004 00000000                    b dd 0
+    13 00000008 00000000                    c dd 0
+    14 0000000C 256400                      format_d db "%d" ,0
+    15 0000000F 256800                      format_h db "%h" ,0
+    16                                      
+    17                                  segment code use32 class=code
+    18                                  start:
+    19 00000000 68[00000000]                push dword a
+    20 00000005 68[0C000000]                push dword format_d
+    21 0000000A FF15[00000000]              call [scanf]
+    22 00000010 83C408                      add esp, 4*2
+    23                                      
+    24 00000013 A1[00000000]                mov eax, [a]
+    25                                  
+    26                                      ; push dword [a]
+    27                                      ; push dword format_d
+    28                                      ; call [printf]
+    29                                      ; add esp, 4*2
+    30                                      
+    31 00000018 68[04000000]                push dword b
+    32 0000001D 68[0C000000]                push dword format_d
+    33 00000022 FF15[00000000]              call [scanf]
+    34 00000028 83C408                      add esp, 4*2
+    35                                      
+    36 0000002B 0305[04000000]              add eax, [b]
+    37                                      
+    38                                      ; push dword [b]
+    39                                      ; push dword format_d
+    40                                      ; call [printf]
+    41                                      ; add esp, 4*2
+    42                                      
+    43 00000031 50                          push eax
+    44 00000032 FF15[00000000]              call [printf]
+    45 00000038 83C408                      add esp, 4*2
+    46                                      
+    47 0000003B 6A00                        push dword 0
+    48 0000003D FF15[00000000]              call [exit]

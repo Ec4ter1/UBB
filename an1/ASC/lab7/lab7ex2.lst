@@ -1,0 +1,116 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit, fopen, fclose, fread, printf             ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                  import fopen msvcrt.dll  
+    10                                  import fclose msvcrt.dll
+    11                                  import fread msvcrt.dll
+    12                                  import printf msvcrt.dll
+    13                                                           ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    14                                  
+    15                                  ;Se da un fisier text. Sa se citeasca continutul fisierului, sa se determine cifra cu cea mai mare frecventa si sa se afiseze acea cifra impreuna cu frecventa acesteia. Numele fisierului text este definit în segmen
+    16                                  
+    17                                  ; our data is declared here (the variables needed by our program)
+    18                                  segment data use32 class=data
+    19 00000000 6669736965722E7478-         nume_fisier db "fisier.txt", 0  ; numele fisierului care va fi creat
+    19 00000009 7400               
+    20 0000000B 7200                        mod_acces db "r", 0         ; modul de deschidere a fisierului - w - pt scriere. daca fiserul nu exista, se va crea                                   
+    21 0000000D FFFFFFFF                    descriptor_fis dd -1
+    22                                      len equ 100                                    
+    23 00000011 00<rept>                    text times len db 0 
+    24 00000075 54657874756C206573-         format db "Textul este: %s.", 0
+    24 0000007E 74653A2025732E00   
+    25 00000086 303132333435363738-         cifre db '0123456789'
+    25 0000008F 39                 
+    26 00000090 00<rept>                    fr times 10 db 0
+    27 0000009A 204672656376656E74-         msg db " Frecventa maxima e %d", 0
+    27 000000A3 61206D6178696D6120-
+    27 000000AC 6520256400         
+    28 000000B1 2061206E756D617275-         msg2 db " a numarului %d", 0
+    28 000000BA 6C756920256400     
+    29 000000C1 00000000                    maxi dd 0
+    30 000000C5 00000000                    nr dd 0
+    31                                  
+    32                                  ; our code starts here
+    33                                  segment code use32 class=code
+    34                                      start:
+    35 00000000 68[0B000000]                    push dword mod_acces     
+    36 00000005 68[00000000]                    push dword nume_fisier
+    37 0000000A FF15[00000000]                  call [fopen]
+    38 00000010 83C408                          add esp, 4*2                ; eliberam parametrii de pe stiva
+    39                                  
+    40 00000013 A3[0D000000]                    mov [descriptor_fis], eax   ; salvam valoarea returnata de fopen in variabila descriptor_fis
+    41                                          
+    42 00000018 83F800                          cmp eax, 0     ; verificam daca functia fopen a creat cu succes fisierul (daca EAX != 0)
+    43 0000001B 0F84A5000000                    je final
+    44                                          
+    45                                          ; citim textul in fisierul deschis folosind functia fread
+    46                                          ; eax = fread(text, 1, len, descriptor_fis)
+    47 00000021 FF35[0D000000]                  push dword [descriptor_fis]
+    48 00000027 6A64                            push dword len
+    49 00000029 6A01                            push dword 1
+    50 0000002B 68[11000000]                    push dword text        
+    51 00000030 FF15[00000000]                  call [fread]
+    52 00000036 83C410                          add esp, 4*4                 ; dupa apelul functiei fread EAX contine numarul de caractere citite din fisier
+    53                                          
+    54                                          ; afisam numarul de caractere citite si textul citit
+    55                                          ; printf(format, eax, text)
+    56 00000039 68[11000000]                    push dword text
+    57 0000003E 68[75000000]                    push dword format
+    58 00000043 FF15[00000000]                  call [printf]
+    59 00000049 83C40C                          add esp, 4*3
+    60                                          
+    61 0000004C B90A000000                      mov ecx, 10; lungimea sirului cifre
+    62 00000051 E373                            jecxz final
+    63 00000053 FC                              cld
+    64 00000054 BE[86000000]                    mov esi, cifre
+    65                                          et:
+    66 00000059 AC                                  lodsb; al <- <ds:esi> cifra
+    67 0000005A 88C2                                mov dl, al
+    68 0000005C 56                                  push esi
+    69 0000005D 51                                  push ecx
+    70 0000005E B964000000                          mov ecx, len
+    71 00000063 BB00000000                          mov ebx, 0
+    72 00000068 BE[11000000]                        mov esi, text; index pt sirul din fisier
+    73                                              cif:
+    74 0000006D AC                                      lodsb; al<-cifra tx
+    75 0000006E 38C2                                    cmp dl, al
+    76 00000070 7501                                    jne incolo
+    77 00000072 43                                      inc ebx
+    78                                                  incolo:
+    79 00000073 E2F8                                loop cif
+    80                                              ;gasim maixmul
+    81 00000075 391D[C1000000]                      cmp [maxi], ebx
+    82 0000007B 7D0C                                jnl acolo
+    83 0000007D 891D[C1000000]                      mov dword [maxi], ebx
+    84 00000083 8815[C5000000]                      mov byte [nr], dl
+    85                                              acolo:
+    86 00000089 59                                  pop ecx
+    87 0000008A 5E                                  pop esi
+    88 0000008B E2CC                            loop et
+    89                                          ;afisam maximul
+    90 0000008D FF35[C1000000]                  push dword [maxi]
+    91 00000093 68[9A000000]                    push dword msg
+    92 00000098 FF15[00000000]                  call [printf]
+    93 0000009E 83C408                          add esp, 4*2
+    94                                          ;afisam numarul
+    95 000000A1 A0[C5000000]                    mov al, [nr]
+    96 000000A6 2C30                            sub al, '0'
+    97 000000A8 6698                            cbw
+    98 000000AA 98                              cwde
+    99 000000AB 50                              push eax
+   100 000000AC 68[B1000000]                    push dword msg2
+   101 000000B1 FF15[00000000]                  call [printf]
+   102                                          ; apelam functia fclose pentru a inchide fisierul
+   103 000000B7 FF35[0D000000]                  push dword [descriptor_fis]
+   104 000000BD FF15[00000000]                  call [fclose]
+   105 000000C3 83C404                          add esp, 4
+   106                                          final:
+   107                                      
+   108                                          ; exit(0)
+   109 000000C6 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+   110 000000C8 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

@@ -1,0 +1,81 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit, fopen, scanf, printf, fprintf             ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll  
+     9                                  import scanf msvcrt.dll 
+    10                                  import printf msvcrt.dll 
+    11                                  import fprintf msvcrt.dll 
+    12                                  import fopen msvcrt.dll   ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+    13                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    14                                  
+    15                                  ; our data is declared here (the variables needed by our program)
+    16                                  segment data use32 class=data
+    17                                      max equ 50
+    18 00000000 00<rept>                    nume_fisier times max db 0
+    19 00000032 00<rept>                    d times max db 0
+    20 00000064 00<rept>                    m times max db 0
+    21 00000096 257300                      format_s db "%s", 0
+    22 00000099 7700                        mod_access db "w", 0
+    23 0000009B FFFFFFFF                    descriptor dd -1
+    24                                  
+    25                                  ; our code starts here
+    26                                  segment code use32 class=code
+    27                                      start:
+    28 00000000 68[00000000]                    push dword nume_fisier
+    29 00000005 68[96000000]                    push dword format_s
+    30 0000000A FF15[00000000]                  call [scanf]
+    31 00000010 83C408                          add esp, 4*2
+    32                                          
+    33 00000013 68[00000000]                    push dword nume_fisier
+    34 00000018 68[96000000]                    push dword format_s
+    35 0000001D FF15[00000000]                  call [printf]
+    36 00000023 83C408                          add esp, 4*2
+    37                                          
+    38 00000026 68[99000000]                    push dword mod_access
+    39 0000002B 68[00000000]                    push dword nume_fisier
+    40 00000030 FF15[00000000]                  call [fopen]
+    41 00000036 83C408                          add esp, 4*2
+    42                                          
+    43 00000039 A3[9B000000]                    mov [descriptor],eax
+    44                                          
+    45 0000003E 83F800                          cmp eax, 0
+    46 00000041 7459                            je final
+    47                                          
+    48 00000043 B90B000000                      mov ecx,11
+    49 00000048 BE0A000000                      mov esi, 10
+    50 0000004D BF00000000                      mov edi, 0
+    51 00000052 BB00000000                      mov ebx, 0
+    52                                          
+    53                                          repeta:
+    54 00000057 8A86[00000000]                  mov al, [nume_fisier+esi]
+    55 0000005D 3C61                            cmp al, "a"
+    56 0000005F 7209                            jb maj
+    57                                          ;al>"a"
+    58 00000061 8887[32000000]                  mov [d+edi], al
+    59 00000067 47                              inc edi
+    60 00000068 EB07                            jmp mai_inc
+    61                                          maj:
+    62 0000006A 8883[64000000]                  mov [m+ebx], al
+    63 00000070 43                              inc ebx
+    64                                          mai_inc:
+    65 00000071 4E                              dec esi
+    66 00000072 E2E3                            loop repeta
+    67                                          
+    68 00000074 68[32000000]                    push dword d
+    69 00000079 FF35[9B000000]                  push dword [descriptor]
+    70 0000007F FF15[00000000]                  call [fprintf]
+    71 00000085 83C408                          add esp, 4*2
+    72                                          
+    73 00000088 68[71000000]                    push dword mai_inc
+    74 0000008D FF35[9B000000]                  push dword [descriptor]
+    75 00000093 FF15[00000000]                  call [fprintf]
+    76 00000099 83C408                          add esp, 4*2
+    77                                          
+    78                                          final:
+    79                                          ; exit(0)
+    80 0000009C 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    81 0000009E FF15[00000000]                  call    [exit]       ; call exit to terminate the program

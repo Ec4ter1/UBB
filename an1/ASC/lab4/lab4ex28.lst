@@ -1,0 +1,45 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  
+    11                                  ;Se da quadwordul A. Sa se obtina numarul intreg N reprezentat de bitii 17-19 ai lui A. Sa se obtina apoi in B dublucuvantul rezultat prin rotirea spre ;stanga a dublucuvantului superior al lui A cu N pozitii. Sa se
+    12                                  ;bitii 0-2 ai lui C sunt bitii 9-11 ai lui B
+    13                                  ;bitii 3-7 ai lui C sunt bitii 20-24 ai lui B
+    14                                  
+    15                                  ; our data is declared here (the variables needed by our program)
+    16                                  segment data use32 class=data
+    17 00000000 11BBAA22DDCCEE77            a dq 77EECCDD22AABB11h
+    18 00000008 00                          n db 0
+    19 00000009 00000000                    b dd 0
+    20 0000000D 00                          c db 0
+    21                                  
+    22                                  ; our code starts here
+    23                                  segment code use32 class=code
+    24                                      start:
+    25                                          ;n=a(17-19)
+    26 00000000 8B15[04000000]                  mov edx, [a+4]; edx= 77EECCDDh
+    27 00000006 A1[00000000]                    mov eax, [a]; eax= 22AABB11h
+    28 0000000B 2500000E00                      and eax, 00000000000011100000000000000000b; eax=000A0000h
+    29 00000010 B111                            mov cl, 17
+    30 00000012 D3C8                            ror eax, cl; eax=0000 0005h
+    31 00000014 88C1                            mov cl, al; cl=05h= n
+    32                                          ;b= a rotit spre stanga de n ori
+    33 00000016 D3C2                            rol edx, cl; edx=b=FDD99BAE
+    34                                          ;gasim b(9-11) si b(20-24)
+    35 00000018 81E2000EF001                    and edx, 00000001111100000000111000000000b; edx=01D00A00h
+    36                                          ;c(0-2)=b(9-11)
+    37 0000001E B109                            mov cl, 9
+    38 00000020 D3CA                            ror edx, cl; edx=0000E805h
+    39 00000022 88C3                            mov bl, al; bl=05h
+    40 00000024 B108                            mov cl, 8
+    41 00000026 D3CA                            ror edx, cl; edx=
+    42 00000028 08D3                            or bl, dl; bl= EDh
+    43                                          ; exit(0)
+    44 0000002A 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    45 0000002C FF15[00000000]                  call    [exit]       ; call exit to terminate the program

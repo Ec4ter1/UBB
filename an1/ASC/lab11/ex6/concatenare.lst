@@ -1,0 +1,5 @@
+     1                                  bits 32                         
+     2                                  segment code use32 public code
+     3                                  global concatenare
+     4                                  
+     5                                  concatenare:
